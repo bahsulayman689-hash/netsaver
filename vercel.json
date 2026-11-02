@@ -1,0 +1,10 @@
+{
+  "buildCommand": "sh build.sh",
+  "outputDirectory": "public",
+  "headers": [
+    { "source": "/(sw.js|index.html|config.js|content.js|i18n.js)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/(.*)",
+      "headers": [{ "key": "X-Content-Type-Options", "value": "nosniff" }] }
+  ]
+}

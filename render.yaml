@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: netsaver-gm
+    runtime: static
+    buildCommand: |
+      printf 'window.NS_CONFIG={SUPABASE_URL:"%s",SUPABASE_ANON:"%s"};\n' "$SUPABASE_URL" "$SUPABASE_ANON" > config.js
+    staticPublishPath: .
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON
+        sync: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /config.js
+        name: Cache-Control
+        value: no-cache
+      - path: /content.js
+        name: Cache-Control
+        value: no-cache
+      - path: /i18n.js
+        name: Cache-Control
+        value: no-cache
