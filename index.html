@@ -132,6 +132,26 @@ td{padding:9px 4px;border-top:1px solid var(--line)}
 .item{border-top:1px solid var(--line);padding:12px 0}
 .item:first-child{border-top:0;padding-top:0}
 
+
+.netinfo{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.netinfo>div{background:var(--paper);border-radius:var(--r-sm);padding:10px 12px}
+.netinfo b{display:block;font-size:18px;font-variant-numeric:tabular-nums;line-height:1.3}
+.netinfo span{font-size:12px;color:var(--ink2)}
+.caps{display:grid;gap:8px;margin-top:12px}
+.caps>div{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.caps b{font-weight:700}
+.hbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:13px}
+.hbar .l{width:104px;flex:none;font-variant-numeric:tabular-nums}
+.hbar .t{flex:1;height:12px;background:var(--paper);border-radius:6px;overflow:hidden}
+.hbar .t i{display:block;height:100%;background:var(--river);border-radius:6px}
+.hbar.best .t i{background:var(--leaf)}
+.hbar .v{width:118px;flex:none;text-align:right;color:var(--ink2)}
+
+.steps{margin:0 0 14px;padding-left:20px}
+.steps li{margin:6px 0;max-width:60ch}
+.stats.sm .big{font-size:20px}
+.tu{display:flex;justify-content:space-between;align-items:center;gap:10px}
+
 /* navigation */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:60px;padding:8px 2px;background:none;border:0;color:var(--ink2);font-size:12px;font-weight:600;position:relative}
@@ -178,6 +198,16 @@ nav button.on::before{content:"";position:absolute;top:0;left:24%;right:24%;heig
 <main>
 
 <section id="plan" class="on">
+  <div class="panel" id="welcome" hidden>
+    <h2>Welcome to NetSaver</h2>
+    <ol class="steps">
+      <li>Save your data bundles to see which is cheapest per GB.</li>
+      <li>Tap Use on your active bundle and log what you use.</li>
+      <li>Install the app so it works without internet.</li>
+    </ol>
+    <div class="actions"><button class="b" id="installBtn" hidden onclick="installApp()">Install app</button><button class="g" onclick="closeWelcome()">Got it</button></div>
+    <p class="hint" id="iosHint" hidden>On iPhone: tap the Share button, then Add to Home Screen.</p>
+  </div>
   <div class="hero"><h2 data-i="h_active">Active data bundle</h2><div id="active"></div></div>
 
   <div class="panel"><h2 data-i="h_log">Log usage</h2>
@@ -186,6 +216,18 @@ nav button.on::before{content:"";position:absolute;top:0;left:24%;right:24%;heig
       <button class="b" onclick="logUse()">Add usage</button>
     </div>
     <p class="hint">Check your balance with your provider’s code, then log what you used. Everything stays on your phone.</p>
+  </div>
+
+  <div class="panel"><h2>Top-ups and spending</h2>
+    <div id="spendSummary"></div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="field"><label for="tuAmt">Amount paid (GMD)</label><input id="tuAmt" type="number" inputmode="decimal" min="0"></div>
+      <div class="field"><label for="tuMB">Data bought (MB)</label><input id="tuMB" type="number" inputmode="decimal" min="0" placeholder="Optional"></div>
+    </div>
+    <div class="field"><label for="tuNote">Provider or note</label><input id="tuNote" placeholder="Optional"></div>
+    <div class="actions"><button class="b" onclick="addTopup()">Save top-up</button></div>
+    <div id="tuList" style="margin-top:16px"></div>
+    <p class="hint">Add the data size so the app can work out what you really pay per GB and compare it with your cheapest saved bundle.</p>
   </div>
 
   <div class="panel"><h2 data-i="h_compare">Compare bundles</h2>
@@ -243,16 +285,46 @@ nav button.on::before{content:"";position:absolute;top:0;left:24%;right:24%;heig
     <div class="actions"><button class="b" onclick="calcSave()">Calculate</button></div>
     <div id="sOut" class="result"></div>
   </div>
+  <div class="panel"><h2>Backup and restore</h2>
+    <p class="mut">Save your bundles, usage, top-ups, notes, test results and connection log as one file. Restore it on a new phone or after clearing your browser.</p>
+    <div class="actions"><button class="b" onclick="exportAll()">Save backup</button><button class="g" onclick="document.getElementById('impAll').click()">Restore backup</button></div>
+    <input id="impAll" type="file" accept=".json" hidden onchange="importAll(event)" aria-label="Restore backup file">
+    <p class="hint">Restoring replaces the data on this phone.</p>
+  </div>
+  <div class="panel"><h2>Share NetSaver</h2>
+    <p class="mut">Help friends and family spend less on data.</p>
+    <div class="actions"><button class="b" onclick="shareApp()">Share the app</button><button class="g" onclick="copyLink()">Copy link</button><button class="g" id="installBtn2" hidden onclick="installApp()">Install app</button></div>
+  </div>
+  <div class="panel"><h2>Privacy</h2>
+    <details class="note"><summary><span>What this app stores and shares</span></summary>
+      <div class="n-body">Stays on your phone: bundles, usage, top-ups, notes, connection logs and test results.
+
+Sent only when you choose: a report or a shared bundle price. Reports are reviewed before they are published, locations are rounded to about 1 km, and phone-number-like text is hidden. Please do not write names or phone numbers in reports.
+
+To remove data from this phone, clear the site data in your browser settings. To ask for a published report to be removed, contact the person who runs this app.</div>
+    </details>
+  </div>
 </section>
 
 <section id="mon">
+  <div class="panel"><h2>Connection check</h2>
+    <div id="netinfo" class="netinfo"></div>
+    <label class="check"><input type="checkbox" id="doSpeed"><span>Include a speed test (uses about 0.2 MB of data)</span></label>
+    <div class="actions"><button class="b" id="testBtn" onclick="runTest()">Run test</button><button class="g" onclick="useInReport()">Use in a report</button></div>
+    <div id="testOut" class="result"></div>
+    <p class="hint">Quick estimate from a small test, so fast connections may read lower than they really are. Network details marked as reported come from your phone and may be unavailable in some browsers.</p>
+  </div>
   <div class="panel"><h2 data-i="h_mon">Connection monitor</h2>
     <div class="stats">
       <div><div class="big" id="upt">–</div><div class="mut">Uptime</div></div>
       <div><div class="big" id="lat">–</div><div class="mut">Latency (ms)</div></div>
       <div><div class="big" id="outs">–</div><div class="mut">Outages</div></div>
     </div>
+    <label class="check"><input type="checkbox" id="lowData" onchange="setLow(this.checked)"><span>Low-data mode: pause the automatic checks</span></label>
     <p class="hint">Measured while this app is open, by checking its own server every 30 seconds.</p>
+  </div>
+  <div class="panel"><h2>Best time to go online</h2><div id="bestTime"></div>
+    <p class="hint">Built from the checks this app logged on your phone. Keep it open at different times of day to improve the result.</p>
   </div>
   <div class="panel"><h2>Recent changes</h2><div id="monLog"></div>
     <div class="actions" style="margin-top:12px"><button class="g" onclick="exportMon()">Export CSV</button><button class="g danger" onclick="clearMon()">Clear log</button></div>
@@ -312,7 +384,7 @@ mergePack();
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('nav button,section').forEach(e=>e.classList.remove('on'));
   b.classList.add('on');$(b.dataset.t).classList.add('on');window.scrollTo(0,0);
-  if(b.dataset.t==='mon')renderMon();
+  if(b.dataset.t==='mon'){renderMon();renderBest();renderNetInfo();renderTests()}
 });
 
 /* ---- DATA PLANNER ---- */
@@ -428,6 +500,8 @@ async function ping(){
   mon.push({t:Date.now(),ok,ms});if(mon.length>2000)mon=mon.slice(-2000);sv('mon',mon);
   setStatus(ok);
   if(ok&&queue.length&&lastState===false)flush();
+  if(lastState===true&&!ok)alert('Connection lost. The app keeps working offline.');
+  if(lastState===false&&ok){let i=mon.length-2;while(i>=0&&!mon[i].ok)i--;const since=mon[i+1]?mon[i+1].t:Date.now();const mins=Math.max(1,Math.round((Date.now()-since)/60000));alert(`Back online after about ${mins} min.`+(queue.length?' Sending your saved reports.':''))}
   lastState=ok;renderMon();
 }
 function setStatus(ok){const s=$('status');s.textContent=tr(ok?'online':'offline',ok?'Online':'Offline');s.className=ok?'up':'down'}
@@ -503,11 +577,172 @@ function applyLang(){
 }
 function setLang(l){LG=l;sv('lang',l);applyLang()}
 
+/* ---- CONNECTION CHECK ---- */
+const NC=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+let tests=ld('tests',[]);
+let lowData=ld('lowData',false);
+function setLow(v){lowData=v;sv('lowData',v);alert(v?'Low-data mode on. Automatic checks are paused.':'Automatic checks resumed.');if(!v)ping()}
+function renderNetInfo(){
+  const el=$('netinfo');
+  if(!NC){el.innerHTML='<div style="grid-column:1/-1"><span>Your browser does not share network details. Run the test below instead.</span></div>';return}
+  const tile=(v,l)=>`<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
+  let h=tile((NC.effectiveType||'unknown').toUpperCase(),'Quality reported by phone');
+  h+=tile(NC.downlink!=null?NC.downlink+' Mbps':'unknown','Speed reported by phone');
+  h+=tile(NC.rtt!=null?NC.rtt+' ms':'unknown','Delay reported by phone');
+  h+=tile(NC.saveData?'On':'Off','Data saver');
+  if(NC.type)h+=tile(NC.type,'Connection type');
+  el.innerHTML=h;
+}
+async function pingOnce(){const t=performance.now();const r=await fetch('ping.txt?'+Date.now()+Math.random(),{cache:'no-store'});await r.text();return performance.now()-t}
+function rate(r){
+  const rows=[];
+  const L=r.lat,fail=r.loss;
+  rows.push(['Text messages',L==null?['bad','Not reachable']:L<800?['good','Good']:L<1500?['warn','Slow']:['bad','Unreliable']]);
+  rows.push(['Voice calls',L==null?['bad','Not reachable']:(L<400&&!fail)?['good','Good']:L<800?['warn','May cut out']:['bad','Not recommended']]);
+  rows.push(['Video calls',r.mbps==null?['warn','Run the speed test']:(r.mbps>=1.5&&L<300)?['good','Good']:r.mbps>=0.8?['warn','Low quality']:['bad','Not recommended']]);
+  rows.push(['Watching video',r.mbps==null?['warn','Run the speed test']:r.mbps>=2?['good','Good']:r.mbps>=1?['warn','Low quality']:['bad','Not recommended']]);
+  return rows;
+}
+function showResult(r){
+  if(!r){$('testOut').innerHTML='';return}
+  const head=r.lat==null?'No reply from the server':`${r.lat} ms delay`+(r.mbps!=null?`, ${r.mbps} Mbps`:'');
+  $('testOut').innerHTML=`<div class="big">${esc(head)}</div>
+  <div class="mut">${r.jit!=null?`Jitter ${r.jit} ms. `:''}${r.loss?`${r.loss} of 5 checks failed. `:''}${new Date(r.t).toLocaleString()}</div>
+  <div class="caps">${rate(r).map(([n,[c,t]])=>`<div><span>${n}</span><b class="${c}">${t}</b></div>`).join('')}</div>
+  <div class="hint">Rough guide only.</div>`;
+}
+async function runTest(){
+  const btn=$('testBtn');if(btn.disabled)return;
+  if(!navigator.onLine){alert('You are offline. Connect first, then run the test.');return}
+  btn.disabled=true;btn.textContent='Testing…';$('testOut').innerHTML='<div class="mut">Measuring delay…</div>';
+  const res={t:Date.now(),lat:null,jit:null,loss:0,mbps:null};
+  try{
+    try{await pingOnce()}catch{}
+    const arr=[];let fail=0;
+    for(let i=0;i<5;i++){try{arr.push(await pingOnce())}catch{fail++}}
+    res.loss=fail;
+    if(arr.length){arr.sort((a,b)=>a-b);res.lat=Math.round(arr[Math.floor(arr.length/2)]);res.jit=Math.round(arr[arr.length-1]-arr[0])}
+    if($('doSpeed').checked&&arr.length){
+      $('testOut').innerHTML='<div class="mut">Measuring speed…</div>';
+      const t0=performance.now();
+      const r=await fetch('speed.bin?'+Date.now(),{cache:'no-store'});
+      const buf=await r.arrayBuffer();
+      const sec=(performance.now()-t0)/1000;
+      if(r.ok&&sec>0)res.mbps=+(buf.byteLength*8/sec/1e6).toFixed(2);
+    }
+  }catch{}
+  tests.unshift(res);tests=tests.slice(0,50);sv('tests',tests);
+  btn.disabled=false;btn.textContent='Run test';
+  showResult(res);renderTests();
+}
+function renderTests(){if(!$('testOut').innerHTML&&tests[0])showResult(tests[0])}
+function useInReport(){
+  const r=tests[0];if(!r)return alert('Run a test first.');
+  $('rText').value=`Connection test ${new Date(r.t).toLocaleString()}: `+(r.lat==null?'no reply from the server':`delay ${r.lat} ms`+(r.jit!=null?`, jitter ${r.jit} ms`:'')+(r.mbps!=null?`, speed ${r.mbps} Mbps`:'')+(r.loss?`, ${r.loss} of 5 checks failed`:''))+'.';
+  $('rType').value='Slow speed';
+  document.querySelector('nav button[data-t=out]').click();
+  alert('Test added to your report. Add your provider and location, then save it.');
+}
+function renderBest(){
+  const by={};
+  mon.forEach(x=>{const h=new Date(x.t).getHours();const o=by[h]||(by[h]={n:0,up:0,ms:[]});o.n++;if(x.ok){o.up++;if(x.ms!=null)o.ms.push(x.ms)}});
+  const rows=Object.entries(by).filter(([h,o])=>o.n>=3).map(([h,o])=>({h:+h,up:o.up/o.n*100,ms:o.ms.length?Math.round(o.ms.reduce((a,b)=>a+b,0)/o.ms.length):null,n:o.n}));
+  const el=$('bestTime');
+  if(rows.length<2){el.innerHTML='<div class="empty">Not enough data yet. Keep the app open at different times of the day.</div>';return}
+  const ranked=[...rows].sort((a,b)=>(b.up-a.up)||((a.ms??9e9)-(b.ms??9e9)));
+  const best=new Set(ranked.slice(0,3).map(r=>r.h));
+  const hh=h=>String(h).padStart(2,'0')+':00';
+  const top=ranked[0];
+  el.innerHTML=`<p style="margin-bottom:10px"><b>Best so far: ${hh(top.h)} to ${hh((top.h+1)%24)}</b> <span class="mut">(${top.up.toFixed(0)}% up${top.ms!=null?`, ${top.ms} ms`:''})</span></p>`+
+    rows.sort((a,b)=>a.h-b.h).map(r=>`<div class="hbar${best.has(r.h)?' best':''}"><span class="l">${hh(r.h)} to ${hh((r.h+1)%24)}</span><span class="t"><i style="width:${r.up.toFixed(0)}%"></i></span><span class="v">${r.up.toFixed(0)}% up${r.ms!=null?`, ${r.ms} ms`:''}</span></div>`).join('')+
+    '<div class="hint">Green bars are your three most reliable hours.</div>';
+}
+
+/* ---- SPENDING ---- */
+let topups=ld('topups',[]);
+function addTopup(){
+  const amt=+$('tuAmt').value,mb=+$('tuMB').value||0;
+  if(!(amt>0))return alert('Enter the amount you paid.');
+  topups.unshift({id:Date.now(),t:Date.now(),amt,mb,note:$('tuNote').value.trim().slice(0,60)});
+  sv('topups',topups);['tuAmt','tuMB','tuNote'].forEach(i=>$(i).value='');renderSpend();
+}
+function delTopup(id){topups=topups.filter(x=>x.id!==id);sv('topups',topups);renderSpend()}
+function renderSpend(){
+  const now=new Date(),ym=d=>d.getFullYear()*12+d.getMonth();
+  const month=topups.filter(x=>ym(new Date(x.t))===ym(now));
+  const spent=month.reduce((a,x)=>a+x.amt,0);
+  const withMB=topups.filter(x=>x.mb>0);
+  const totGB=withMB.reduce((a,x)=>a+x.mb/1024,0);
+  const avg=totGB>0?withMB.reduce((a,x)=>a+x.amt,0)/totGB:null;
+  const cheapest=bundles.length?Math.min(...bundles.map(b=>b.price/(b.mb/1024))):null;
+  const save=cheapest!=null?month.filter(x=>x.mb>0).reduce((a,x)=>a+Math.max(0,x.amt-x.mb/1024*cheapest),0):null;
+  let h=`<div class="stats sm"><div><div class="big">${fmt(spent)}</div><div class="mut">GMD spent this month</div></div>
+  <div><div class="big">${avg!=null?fmt(avg):'–'}</div><div class="mut">GMD per GB you paid</div></div>
+  <div><div class="big">${save!=null&&month.some(x=>x.mb>0)?fmt(save):'–'}</div><div class="mut">GMD you could save</div></div></div>`;
+  if(save!=null&&save>0)h+=`<p class="hint">If those top-ups had been bought at your cheapest saved bundle price per GB (${fmt(cheapest)} GMD), you would have paid about ${fmt(save)} GMD less this month.</p>`;
+  const by={};topups.forEach(x=>{const d=new Date(x.t),k=ym(d);(by[k]=by[k]||{d,sum:0}).sum+=x.amt});
+  const months=Object.values(by).sort((a,b)=>b.d-a.d).slice(0,6).reverse();
+  if(months.length>1){const mx=Math.max(...months.map(m=>m.sum));
+    h+='<div style="margin-top:14px">'+months.map(m=>`<div class="hbar"><span class="l">${esc(m.d.toLocaleString(undefined,{month:'short',year:'numeric'}))}</span><span class="t"><i style="width:${(m.sum/mx*100).toFixed(0)}%"></i></span><span class="v">${fmt(m.sum)} GMD</span></div>`).join('')+'</div>'}
+  $('spendSummary').innerHTML=h;
+  $('tuList').innerHTML=topups.slice(0,8).map(x=>`<div class="item tu"><div><b>${fmt(x.amt)} GMD</b>${x.mb>0?` for ${fmtData(x.mb)}`:''}<div class="mut">${esc(new Date(x.t).toLocaleDateString())}${x.note?`, ${esc(x.note)}`:''}</div></div><button class="g sm danger" onclick="delTopup(${x.id})">Delete</button></div>`).join('')||'<div class="empty">No top-ups yet. Save your next one to see your spending.</div>';
+}
+
+/* ---- BACKUP ---- */
+const BACKUP_KEYS={bundles:'a',active:'o',usage:'a',notes:'a',mon:'a',queue:'a',tests:'a',topups:'a',packGone:'a',lang:'s',lowData:'b'};
+function exportAll(){
+  const data={};Object.keys(BACKUP_KEYS).forEach(k=>{const v=ld(k,undefined);if(v!==undefined)data[k]=v});
+  dl('netsaver-backup-'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'netsaver-gm',v:1,at:new Date().toISOString(),data}),'application/json');
+}
+function importAll(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const o=JSON.parse(r.result);if(!o||o.app!=='netsaver-gm'||typeof o.data!=='object')throw 0;
+      const ok=(k,v)=>BACKUP_KEYS[k]==='a'?Array.isArray(v):BACKUP_KEYS[k]==='o'?(v===null||typeof v==='object'):BACKUP_KEYS[k]==='s'?typeof v==='string':typeof v==='boolean';
+      const keys=Object.keys(o.data).filter(k=>k in BACKUP_KEYS&&ok(k,o.data[k]));
+      if(!keys.length)throw 0;
+      if(!confirm('Replace the data on this phone with this backup?'))return;
+      keys.forEach(k=>sv(k,o.data[k]));
+      alert('Backup restored.');setTimeout(()=>location.reload(),800);
+    }catch{alert('This file is not a NetSaver backup.')}
+  };
+  r.readAsText(f);e.target.value='';
+}
+
+/* ---- INSTALL, WELCOME, SHARE ---- */
+let deferredInstall=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false;$('installBtn2').hidden=false});
+addEventListener('appinstalled',()=>{deferredInstall=null;$('installBtn').hidden=true;$('installBtn2').hidden=true;$('welcome').hidden=true});
+async function installApp(){
+  if(!deferredInstall)return alert('Open your browser menu and choose Add to Home Screen.');
+  deferredInstall.prompt();try{await deferredInstall.userChoice}catch{}
+  deferredInstall=null;$('installBtn').hidden=true;$('installBtn2').hidden=true;
+}
+function initWelcome(){
+  if(isStandalone()||ld('welcomeDone',false))return;
+  $('welcome').hidden=false;
+  $('iosHint').hidden=!/iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function closeWelcome(){sv('welcomeDone',true);$('welcome').hidden=true}
+const appUrl=()=>location.href.split('#')[0].split('?')[0].replace(/index\.html$/,'');
+async function shareApp(){
+  const data={title:'NetSaver GM',text:'Track your mobile data, read lessons offline and report outages in The Gambia.',url:appUrl()};
+  if(navigator.share){try{await navigator.share(data)}catch{}}else copyLink();
+}
+async function copyLink(){
+  const u=appUrl();
+  try{await navigator.clipboard.writeText(u)}catch{const t=document.createElement('textarea');t.value=u;document.body.appendChild(t);t.select();try{document.execCommand('copy')}catch{}t.remove()}
+  alert('Link copied. Paste it into WhatsApp or any chat.');
+}
+
 /* ---- INIT ---- */
 const toastEl=$('toast');let toastT;
 window.alert=m=>{toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('show'),4500)};
 document.querySelectorAll('input,textarea,select').forEach(e=>{if(!e.getAttribute('aria-label')&&!e.labels?.length)e.setAttribute('aria-label',e.placeholder||e.id)});
-renderPlan();renderLib();renderQueue();applyLang();ping();setInterval(ping,30000);
+$('lowData').checked=lowData;if(NC&&NC.addEventListener)NC.addEventListener('change',renderNetInfo);
+renderPlan();renderLib();renderQueue();renderSpend();initWelcome();applyLang();ping();setInterval(()=>{if(!lowData&&!document.hidden)ping()},30000);
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
