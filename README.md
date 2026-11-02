@@ -2,8 +2,8 @@
 
 An offline-first web app that helps people in The Gambia spend less on mobile data, keep learning without a connection, and report outages and prices so the problem becomes visible.
 
-**Live app:** https://netsaver-gm.vercel.app  
-**Public dashboard:** https://netsaver-gm.vercel.app/dashboard.html
+**Live app:** https://netsaver.vercel.app/  
+**Public dashboard:** https://netsaver.vercel.app/dashboard.html
 
 ## Why this exists
 
